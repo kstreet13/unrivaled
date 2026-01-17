@@ -1,0 +1,17 @@
+{
+  "hash": "7941d1c381a776918f051ea58af2217c",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Unrivaled Team Rankings\"\nformat: \n  html:\n    fig-width: 10\n    fig-height: 6\n    toc: false\nlightbox: true\n---\n\n\n\n\n\n::: {.panel-tabset}\n## 2026\n\n\n::: {.cell}\n\n:::\n\n\n\n::: {.cell .light-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-3-1.png){width=960}\n:::\n:::\n\n\n\n::: {.cell .dark-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-4-1.png){width=960}\n:::\n:::\n\n\n## 2025\n\n\n::: {.cell}\n\n:::\n\n\n\n::: {.cell .light-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-6-1.png){width=960}\n:::\n:::\n\n\n\n::: {.cell .dark-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-7-1.png){width=960}\n:::\n:::\n\n\n:::\n\n\n### About these plots\n\nElo ratings are a way of estimating a team's \"true\" skill level, invented by Arpad Elo to rank chess players ([Wikipedia](https://en.wikipedia.org/wiki/Elo_rating_system)). The rating system used here is a simplified version of the WNBA ratings system implemented by fivethirtyeight.com. Ratings reset to 1500 at the beginning of the season, since the rosters were redrafted.\n\n\n# Recent Games\n\n\n\n::: {.cell}\n\n:::\n\n\n\n::: {.cell .light-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-9-1.png){width=768}\n:::\n\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-9-2.png){width=768}\n:::\n\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-9-3.png){width=768}\n:::\n:::\n\n\n\n::: {.cell .dark-mode}\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-10-1.png){width=768}\n:::\n\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-10-2.png){width=768}\n:::\n\n::: {.cell-output-display}\n![](index_files/figure-html/unnamed-chunk-10-3.png){width=768}\n:::\n:::\n\n\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -1,0 +1,20 @@
+project:
+  type: website
+  execute-dir: project
+
+website:
+  title: "Unrivaled Rankings"
+  navbar:
+    background: '#442176'
+
+format:
+  html:
+    respect-user-color-scheme: true
+    theme:
+      light: [flatly, light.scss]
+      dark: [darkly, dark.scss]
+    css: styles.css
+    toc: true
+
+
+
