@@ -48,6 +48,7 @@ jobs:
             any::scales
             any::rvest
             any::plotly
+            any::lubridate
 
       # From https://github.com/julia-actions/setup-julia
       # - name: Setup Julia
