@@ -3,7 +3,7 @@ require(stringr)
 require(lubridate)
 
 getSchedule <- function(year){
-    p <- read_html(paste0('https://www.unrivaled.basketball/schedule?season=',year))
+    p <- read_html(paste0('https://www.unrivaled.basketball/schedule?season=',year,'&games=All'))
     t <- as.character(p)
     t <- unlist(strsplit(t, split='\n'))
     
