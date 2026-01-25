@@ -2,6 +2,16 @@ require(rvest)
 require(stringr)
 require(lubridate)
 
+teamcolors <- read.csv(text = 'team,color1,color2
+Breeze,#B52F72,#4B3970
+Hive,#FFC728,#17181C
+Laces,#76B1A1,#FFFFFF
+Lunar Owls,#40347D,#FCFFFE
+Mist,#063860,#A3D3E7
+Phantom,#000000,#FFFFFF
+Rose,#1B5750,#DDA493
+Vinyl,#820234,#1E9CBF')
+
 getSchedule <- function(year){
     p <- read_html(paste0('https://www.unrivaled.basketball/schedule?season=',year,'&games=All'))
     t <- as.character(p)
@@ -71,7 +81,7 @@ getSchedule <- function(year){
             teams <- str_extract(records[[gi]], '>[[:alpha:]]+[[:space:]]?[[:alpha:]]+<')
             teams <- teams[!is.na(teams)]
             teams <- gsub('[<>]','', teams)
-            teams <- teams[! teams %in% c("Final","Box Score")]
+            teams <- teams[teams %in% teamcolors$team]
             stopifnot(length(teams)==2)
             return(c(date = dates[gi],
                      team1 = teams[1],
@@ -103,16 +113,6 @@ getSchedule <- function(year){
 }
 
 #sched <- getSchedule(2025)
-
-teamcolors <- read.csv(text = 'team,color1,color2
-Breeze,#B52F72,#4B3970
-Hive,#FFC728,#17181C
-Laces,#76B1A1,#FFFFFF
-Lunar Owls,#40347D,#FCFFFE
-Mist,#063860,#A3D3E7
-Phantom,#000000,#FFFFFF
-Rose,#1B5750,#DDA493
-Vinyl,#820234,#1E9CBF')
 
 # source('calcElo.R')
 
