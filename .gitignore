@@ -49,5 +49,7 @@ po/*~
 rsconnect/
 
 /.quarto/
+.quarto/
 
 **/*.quarto_ipynb
+/.quarto/project-cache
