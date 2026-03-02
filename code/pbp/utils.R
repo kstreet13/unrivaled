@@ -81,6 +81,28 @@ IDplayers <- function(plays){
     return(players)
 }
 
+# get time in seconds
+getTime <- function(plays){
+    sec <- rep(NA, nrow(plays))
+    idx13 <- which(plays$quarter %in% c('Q1','Q2','Q3'))
+    sec[idx13] <- sapply(strsplit(plays$time[idx13], split=':'), function(t){
+        t <- as.numeric(t)
+        t <- 60*t[1]+t[2]
+        return(7*60 - t)
+    })
+    idx4 <- which(plays$quarter == 'Q4')
+    sec[idx4] <- sapply(strsplit(plays$time[idx4], split=':'), function(t){
+        t <- as.numeric(t)
+        t <- 60*t[1]+t[2]
+        return(t)
+    })
+    sec[plays$quarter == 'Q2'] <- sec[plays$quarter == 'Q2'] + 7*60
+    sec[plays$quarter == 'Q3'] <- sec[plays$quarter == 'Q3'] + 14*60
+    sec[plays$quarter == 'Q4'] <- sec[plays$quarter == 'Q4'] + 21*60
+    plays$sec <- sec
+    return(plays)
+}
+
 # possBefore, possAfter
 possBeforeAfter <- function(plays, players){
     teams <- unique(players$team)
@@ -99,25 +121,8 @@ possBeforeAfter <- function(plays, players){
     }
     
     # get time in seconds
-    sec <- rep(NA, nrow(plays))
-    idx13 <- which(plays$quarter %in% c('Q1','Q2','Q3'))
-    sec[idx13] <- sapply(strsplit(plays$time[idx13], split=':'), function(t){
-        t <- as.numeric(t)
-        t <- 60*t[1]+t[2]
-        return(7*60 - t)
-    })
-    idx4 <- which(plays$quarter == 'Q4')
-    sec[idx4] <- sapply(strsplit(plays$time[idx4], split=':'), function(t){
-        t <- as.numeric(t)
-        t <- 60*t[1]+t[2]
-        return(t)
-    })
-    sec[plays$quarter == 'Q2'] <- sec[plays$quarter == 'Q2'] + 7*60
-    sec[plays$quarter == 'Q3'] <- sec[plays$quarter == 'Q3'] + 14*60
-    sec[plays$quarter == 'Q4'] <- sec[plays$quarter == 'Q4'] + 21*60
-    plays$sec <- sec
-    rm(idx13,idx4)
-    
+    plays <- getTime(plays)
+
     # make sure plays are sorted by time
     if(any(diff(plays$sec) < 0)){
         # make sure "End of [quarter]" is actually the last play
@@ -140,15 +145,18 @@ possBeforeAfter <- function(plays, players){
     
     # a one-point FT that isn't after a shooting foul is probably missing a clear path label
     for(i in grep('one point free throw', plays$play)){
+        team <- teams[which(!is.na(str_extract(plays$teamplay[i], teams)))]
         for(j in 1:3){
-            # search backwards for shooting foul
-            if(grepl('shooting foul',plays$play[i-j])){
+            # search backwards for shooting or technical foul
+            if(grepl('shooting foul',plays$play[i-j]) |
+               grepl('technical foul',plays$play[i-j])){
                 break
             }
             if(j==3){
                 # only reach this part if there wasn't a shooting foul
+                otherteam <- teams[teams != team]
                 for(j2 in 1:3){
-                    if(grepl('foul',plays$play[i-j2])){
+                    if(grepl(paste(otherteam,'[a-z]* foul'),plays$teamplay[i-j2])){
                         plays$play[i-j2] <- sub('foul','clear path foul',plays$play[i-j2])
                         plays$teamplay[i-j2] <- sub('foul','clear path foul',plays$teamplay[i-j2])
                         break
@@ -179,12 +187,17 @@ possBeforeAfter <- function(plays, players){
             # before: check for technical/flagrant/clear path
             if(i > 1 & plays$time[i] == plays$time[i-1] &
                plays$possAfter[i-1] %in% c('technical','flagrant','clear path')){
-                plays$possBefore[i] <- plays$possAfter[i-1]
+                for(j in 1:10){ # last non-NA possession
+                    if(!is.na(plays$possAfter[i-j])){
+                        plays$possBefore[i] <- plays$possAfter[i-j]
+                        break
+                    }
+                }
             }else{
                 plays$possBefore[i] <- team
             }
             # after: check for and-1
-            if(i < nrow(plays) & plays$time[i] == plays$time[i+1] &
+            if(i < nrow(plays) & # plays$time[i] == plays$time[i+1] & # time can be off
                grepl(paste(otherteam,'shooting foul'), plays$teamplay[i+1])){
                 plays$possAfter[i] <- team
             }else{
@@ -199,18 +212,23 @@ possBeforeAfter <- function(plays, players){
             plays$possAfter[i] <- otherteam
             next
         }
-        if(grepl('lineup change', plays$play[i]) ||
-           grepl('timeout', plays$play[i]) ||
-           grepl('ejected', plays$play[i])){
-            # non-basketball plays, possession doesn't change
-            plays$possBefore[i] <- plays$possAfter[i] <- plays$possAfter[i-1]
-            next
-        }
+        # if(grepl('lineup change', plays$play[i]) ||
+        #    grepl('timeout', plays$play[i]) ||
+        #    grepl('ejected', plays$play[i])){
+        #     # non-basketball plays, possession doesn't change
+        #     plays$possBefore[i] <- plays$possAfter[i] <- plays$possAfter[i-1]
+        #     next
+        # }
         if(grepl('personal foul', plays$play[i])){
             team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' personal foul'))))]
             otherteam <- teams[teams != team]
             plays$possAfter[i] <- otherteam
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             next
         }
         if(grepl('shooting foul', plays$play[i])){
@@ -228,21 +246,31 @@ possBeforeAfter <- function(plays, players){
             next
         }
         if(grepl('technical foul', plays$play[i])){
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             plays$possAfter[i] <- 'technical'
             next
         }
         if(grepl('flagrant', plays$play[i])){
             team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' flagrant'))))]
             otherteam <- teams[teams != team]
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             plays$possAfter[i] <- otherteam
             next
         }
         if(grepl('clear path', plays$play[i])){
-            team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' [a-z]* clear path'))))]
+            team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' [a-z]*[ ]?clear path'))))]
             otherteam <- teams[teams != team]
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            plays$possBefore[i] <- otherteam
             plays$possAfter[i] <- otherteam
             next
         }
@@ -255,7 +283,12 @@ possBeforeAfter <- function(plays, players){
         }
         if(grepl('End of', plays$play[i])){
             plays$possAfter[i] <- 'stoppage'
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             next
         }
         if(grepl('Open inbound', plays$play[i])){
@@ -265,7 +298,12 @@ possBeforeAfter <- function(plays, players){
             next
         }
         if(grepl('Jump ball', plays$play[i])){
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' gains possession'))))]
             plays$possAfter[i] <- team
             next
@@ -273,7 +311,12 @@ possBeforeAfter <- function(plays, players){
         if(grepl('kicked ball', plays$play[i])){
             team <- teams[which(!is.na(str_extract(plays$teamplay[i], paste0(teams,' kicked ball'))))]
             otherteam <- teams[teams != team]
-            plays$possBefore[i] <- plays$possAfter[i-1]
+            for(j in 1:10){ # last non-NA possession
+                if(!is.na(plays$possAfter[i-j])){
+                    plays$possBefore[i] <- plays$possAfter[i-j]
+                    break
+                }
+            }
             plays$possAfter[i] <- otherteam
             next
         }
@@ -287,9 +330,14 @@ possBeforeAfter <- function(plays, players){
     
     # replays are tricky, just take before and after from prev/next play
     for(i in grep('replay', plays$play)){
-        plays$possBefore[i] <- plays$possAfter[i-1]
+        for(j in 1:10){ # last non-NA possession
+            if(!is.na(plays$possAfter[i-j])){
+                plays$possBefore[i] <- plays$possAfter[i-j]
+                break
+            }
+        }
         # go up to 5 plays ahead to figure out who got possession
-        for(j in 1:5){
+        for(j in 1:10){
             if(!is.na(plays$possBefore[i+j])){
                 plays$possAfter[i:(i+j-1)] <- plays$possBefore[i+j]
                 plays$possBefore[(i+1):(i+j)] <- plays$possBefore[i+j]
@@ -329,7 +377,6 @@ possBeforeAfter <- function(plays, players){
         }
     }
     
-    
     # flagrant fouls and clear path fouls are free throw + ball
     for(foultype in c('flagrant','clear path')){
         if(any(grepl(foultype, plays$play))){
@@ -349,6 +396,33 @@ possBeforeAfter <- function(plays, players){
         }
     }
 
+    # after technical foul, ball goes back to team that had possession (I think?)
+    if(any(grepl('technical', plays$play))){
+        for(i in grep('technical', plays$play)){
+            getsBall <- plays$possBefore[i]
+            # check the next 5 lines for a free throw
+            for(j in 1:5){
+                if(grepl('free throw', plays$play[i+j])){
+                    plays$possBefore[(i+1):(i+j)] <- 'technical'
+                    plays$possAfter[i:(i+j-1)] <- 'technical'
+                    plays$possAfter[i+j] <- getsBall # team that had ball gets ball back
+                    break
+                }
+            }
+        }
+    }
+    
+    # non-basketball plays, possession doesn't change ("flow" possession)
+    for(i in which(is.na(plays$possBefore) | is.na(plays$possAfter))){
+        type <- str_extract(plays$play[i], c('lineup change','timeout','ejected'))
+        type <- type[!is.na(type)]
+        if(length(type) == 0){
+            stop(paste('Unknonwn non-basketball play:', plays$play[i]))
+        }else{
+            plays$possBefore[i] <- plays$possAfter[i] <- plays$possAfter[i-1]
+        }
+    }
+    
     # final checks
     # stopifnot(!any(is.na(plays$possBefore)))
     # stopifnot(!any(is.na(plays$possAfter)))
@@ -358,6 +432,7 @@ possBeforeAfter <- function(plays, players){
     return(plays)
 }
 
+# split plays into list of smaller sets of plays, each representing a possession
 getPossessions <- function(plays, players){
     teams <- unique(players$team)
     teams <- teams[!is.na(teams)]
@@ -438,7 +513,7 @@ getPossessions <- function(plays, players){
             validEnd <- FALSE
         }
         if(validEnd){
-            possEnd[i] <- c('make','miss','offFoul','turnover','jump','block')[endTF]
+            possEnd[i] <- c('make','miss','offFoul','turnover','jump','block','stoppage')[endTF]
         }
         validPoss[i] <- countPoss & validStart & validEnd
     }
