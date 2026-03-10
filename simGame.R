@@ -1,5 +1,5 @@
 
-simGame <- function(params){
+simGame <- function(params, verbose = FALSE){
     quarter_length <- 7 # minutes
     
     score <- c(0,0)
@@ -62,6 +62,7 @@ simGame <- function(params){
     }
     
     Wscore <- max(score) + 11
+    
     while(max(score) < Wscore){
         # determine outcome
         outcome <- sample(names(params$outcome), 1, prob = params$outcome)
@@ -97,7 +98,9 @@ simGame <- function(params){
         }
     }
     
-    print(paste0(score[1],' - ',score[2],' (WS: ',Wscore,')'))
+    if(verbose){
+        print(paste0(score[1],' - ',score[2],' (WS: ',Wscore,')'))
+    }
     
     return(score)
 }
