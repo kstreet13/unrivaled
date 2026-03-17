@@ -53,10 +53,8 @@ simGame <- function(params, verbose = FALSE){
                 }
             }
             if(outcome == 'jump'){
-                if(runif(1) < 0.5){
-                    poss <- arrow
-                    arrow <- 3 - arrow
-                }
+                poss <- arrow
+                arrow <- 3 - arrow
             }
         }
     }
@@ -91,10 +89,8 @@ simGame <- function(params, verbose = FALSE){
             }
         }
         if(outcome == 'jump'){
-            if(runif(1) < 0.5){
-                poss <- arrow
-                arrow <- 3 - arrow
-            }
+            poss <- arrow
+            arrow <- 3 - arrow
         }
     }
     
@@ -104,3 +100,35 @@ simGame <- function(params, verbose = FALSE){
     
     return(score)
 }
+
+
+
+
+simGame3 <- function(params){
+    # n possessions
+    n <- 300
+    possessions <- data.frame(
+        t = sample(as.numeric(names(params$lengths)), n, prob = params$lengths, replace = TRUE),
+        out = sample(names(params$outcome), n, prob = params$outcome, replace = TRUE)
+    )
+    possessions$pts <- 0
+    make.ind <- which(possessions$out == 'make')
+    possessions$pts[make.ind] <- sample(as.numeric(names(params$makePoints)), length(make.ind), prob = params$makePoints, replace = TRUE)
+    miss.ind <- which(possessions$out == 'miss')
+    possessions$pts[miss.ind] <- sample(as.numeric(names(params$missPoints)), length(miss.ind), prob = params$missPoints, replace = TRUE)
+    possessions$changePoss <- TRUE
+    reb.ind <- which(possessions$out %in% c('miss','block'))
+    possessions$changePoss[reb.ind] <- runif(length(reb.ind)) < params$reb[1]
+    jmp.ind <- which(possessions$out == 'jump')
+    possessions$changePoss[jmp.ind] <- runif(length(jmp.ind)) < .5
+    possessions$team <- 1 + cumsum(c(FALSE, possessions$changePoss[-nrow(possessions)])) %% 2
+    
+    # determine end of 3rd quarter
+    quarter_length <- 7
+    end3rd <- max(which(cumsum(possessions$t) < quarter_length * 60))
+    
+    
+    return(possessions)
+}
+
+
