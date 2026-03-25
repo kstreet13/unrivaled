@@ -24,8 +24,9 @@ source('code/eloGraph.R')
 #| echo: false
 #| message: false
 year <- 2026
-sched <- getSchedule(year)
-sched <- calcElo(sched)
+# sched <- getSchedule(year)
+# sched <- calcElo(sched)
+sched <- readRDS('data/sched2026.rds') # for offseason
 sched2026 <- sched
 ```
 
